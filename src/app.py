@@ -12,23 +12,18 @@ import plotly.express as px
 import pandas as pd
 import os
 
-# Dynamically build the file path
-model1_path = os.path.join(os.getcwd(), 'models', 'maizeReco.h5')
-model2_path = os.path.join(os.getcwd(), 'models', 'maizeReco2.h5')
-encoder_path = os.path.join(os.getcwd(), 'models', 'encoder_maize.sav')
 
-maize_model1 = load_model(model1_path, compile=False)
-maize_model2 = load_model(model2_path, compile=False)
-encoder = joblib.load(encoder_path)
-
-"""# Load the models and encoder
+# Load the models and encoder
 model1_path = "models/maizeReco.h5"
 model2_path = "models/maizeReco2.h5"
 encoder_path = "models/encoder_maize.sav"
 
-maize_model1 = load_model(model1_path)
-maize_model2 = load_model(model2_path)
-encoder = joblib.load(encoder_path)"""
+maize_model1 = load_model(model1_path, compile=False)
+maize_model2 = load_model(model2_path, compile=False)
+
+# Load the encoder
+with open('models/encoder_maize.sav', 'rb') as f:
+    encoder = pickle.load(f)
 
 # Initialize the app
 app = Dash(__name__, external_stylesheets=[dbc.themes.MINTY])
