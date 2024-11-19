@@ -12,8 +12,8 @@ import plotly.express as px
 import pandas as pd
 
 # Load the models and encoder
-model1_path =r"models/maizeReco.h5"
-model2_path = r"models/maizeReco2.h5"
+model1_path = "models/maizeReco.h5"
+model2_path = "models/maizeReco2.h5"
 encoder_path = "models/encoder_maize.sav"
 
 maize_model1 = load_model(model1_path)
