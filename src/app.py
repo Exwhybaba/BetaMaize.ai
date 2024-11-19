@@ -12,21 +12,59 @@ import dash_bootstrap_components as dbc
 from tensorflow.keras.models import load_model
 import plotly.express as px
 
-# Resolve paths dynamically relative to script's location
+import requests
+
+# Function to download a model or file from a URL
+def download_model(url, destination):
+    try:
+        print(f"Downloading from {url}...")
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an HTTPError for bad responses
+        os.makedirs(os.path.dirname(destination), exist_ok=True)  # Ensure the directory exists
+        with open(destination, 'wb') as f:
+            f.write(response.content)
+        print(f"Saved to {destination}")
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to download {url}: {e}")
+
+# Define URLs and paths dynamically
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR = os.path.join(BASE_DIR, "models")
 model1_path = os.path.join(MODEL_DIR, "maizeReco.h5")
 model2_path = os.path.join(MODEL_DIR, "maizeReco2.h5")
 encoder_path = os.path.join(MODEL_DIR, "encoder_maize.sav")
 
+model1_url = "https://github.com/Exwhybaba/BetaMaize.ai/raw/main/models/maizeReco.h5"
+model2_url = "https://github.com/Exwhybaba/BetaMaize.ai/raw/main/models/maizeReco2.h5"
+encoder_url = "https://github.com/Exwhybaba/BetaMaize.ai/raw/main/models/encoder_maize.sav"
+
+# Download models and encoder
+download_model(model1_url, model1_path)
+download_model(model2_url, model2_path)
+download_model(encoder_url, encoder_path)
+
 # Load models
-maize_model1 = load_model(model1_path, compile=False)
-maize_model2 = load_model(model2_path, compile=False)
+try:
+    maize_model1 = load_model(model1_path, compile=False)
+    print("Model 1 loaded successfully.")
+except Exception as e:
+    print(f"Error loading Model 1: {e}")
+
+try:
+    maize_model2 = load_model(model2_path, compile=False)
+    print("Model 2 loaded successfully.")
+except Exception as e:
+    print(f"Error loading Model 2: {e}")
 
 # Load encoder
-with open(encoder_path, 'rb') as f:
-    encoder = pickle.load(f)
+try:
+    with open(encoder_path, 'rb') as f:
+        encoder = pickle.load(f)
+    print("Encoder loaded successfully.")
+except Exception as e:
+    print(f"Error loading Encoder: {e}")
 
+# Log paths
 print(f"Model 1 Path: {model1_path}")
 print(f"Model 2 Path: {model2_path}")
 print(f"Encoder Path: {encoder_path}")
