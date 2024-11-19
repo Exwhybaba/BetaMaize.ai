@@ -1,29 +1,33 @@
-from dash import Dash, html, dcc, Input, Output, State
-import dash_bootstrap_components as dbc
+import os
 import base64
 import io
+import pickle  # Ensure pickle is imported
+import random
 import numpy as np
+import pandas as pd
 from PIL import Image
 import cv2
+from dash import Dash, html, dcc, Input, Output, State
+import dash_bootstrap_components as dbc
 from tensorflow.keras.models import load_model
-import joblib
-import random  # Simulate GPS coordinates for demonstration
 import plotly.express as px
-import pandas as pd
-import os
 
+# Resolve paths dynamically relative to script's location
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_DIR = os.path.join(BASE_DIR, "models")
+model1_path = os.path.join(MODEL_DIR, "maizeReco.h5")
+model2_path = os.path.join(MODEL_DIR, "maizeReco2.h5")
+encoder_path = os.path.join(MODEL_DIR, "encoder_maize.sav")
 
-# Load the models and encoder
-model1_path = "models/maizeReco.h5"
-model2_path = "models/maizeReco2.h5"
-encoder_path = "models/encoder_maize.sav"
-
+# Load models
 maize_model1 = load_model(model1_path, compile=False)
 maize_model2 = load_model(model2_path, compile=False)
 
-# Load the encoder
-with open('models/encoder_maize.sav', 'rb') as f:
+# Load encoder
+with open(encoder_path, 'rb') as f:
     encoder = pickle.load(f)
+
+
 
 # Initialize the app
 app = Dash(__name__, external_stylesheets=[dbc.themes.MINTY])
