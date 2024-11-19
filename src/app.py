@@ -27,6 +27,9 @@ maize_model2 = load_model(model2_path, compile=False)
 with open(encoder_path, 'rb') as f:
     encoder = pickle.load(f)
 
+print(f"Model 1 Path: {model1_path}")
+print(f"Model 2 Path: {model2_path}")
+print(f"Encoder Path: {encoder_path}")
 
 
 # Initialize the app
