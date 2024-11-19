@@ -12,9 +12,9 @@ import plotly.express as px
 import pandas as pd
 
 # Load the models and encoder
-model1_path = r"C:\Users\HomePC\Documents\Agritech\Maize_Classifier\models\maizeReco.h5"
-model2_path = r"C:\Users\HomePC\Documents\Agritech\Maize_Classifier\models\maizeReco2.h5"
-encoder_path = r"C:\Users\HomePC\Documents\Agritech\Maize_Classifier\models\encoder_maize.sav"
+model1_path =r"models/maizeReco.h5"
+model2_path = r"models/maizeReco2.h5"
+encoder_path = "models/encoder_maize.sav"
 
 maize_model1 = load_model(model1_path)
 maize_model2 = load_model(model2_path)
