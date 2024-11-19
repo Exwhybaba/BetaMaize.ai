@@ -7,6 +7,5 @@ pandas==2.2.3
 Pillow==11.0.0
 plotly==5.24.1
 tensorflow==2.18.0
-tensorflow_intel==2.18.0
 gunicorn
 dash-tools
