@@ -13,6 +13,8 @@ from tensorflow.keras.models import load_model
 import plotly.express as px
 
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
 # Load the trained model
 maize_model1 = load_model('maizeReco.h5', compile=False)
 maize_model2 = load_model('maizeReco2.h5', compile=False)
@@ -223,4 +225,6 @@ def update_gps_map(content):
 
 # Run the app
 if __name__ == "__main__":
-    app.run_server(debug=True, port=8030)
+    port = int(os.environ.get("PORT", 8050))
+    app.run_server(debug=True, host="0.0.0.0", port=port)
+    
