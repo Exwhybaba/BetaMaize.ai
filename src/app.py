@@ -12,34 +12,34 @@ import dash_bootstrap_components as dbc
 from tensorflow.keras.models import load_model
 import plotly.express as px
 
-
+# Prevent TensorFlow from using the GPU
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-# Load the trained model
-maize_model1 = load_model('maizeReco.h5', compile=False)
-maize_model2 = load_model('maizeReco2.h5', compile=False)
+# Load the trained models
+maize_model1 = load_model("maizeReco.h5", compile=False)
+maize_model2 = load_model("maizeReco2.h5", compile=False)
 
 # Load the encoder
-with open('encoder_maize.sav', 'rb') as f:
+with open("encoder_maize.sav", "rb") as f:
     encoder = pickle.load(f)
-
 
 # Initialize the app
 app = Dash(__name__, external_stylesheets=[dbc.themes.MINTY])
 server = app.server
+
+# Sidebar content
 sidebar_content = [
     html.H2("Description", className="display-6", style={"color": "#006400"}),
     html.Hr(style={"borderTop": "3px solid #006400"}),
     html.H4("Blight", style={"color": "#228B22"}),
-    html.P("Blight is a general term for plant diseases caused by fungi or bacteria, leading to rapid tissue death, particularly affecting the leaves and stems."),  # Removed extra parenthesis
+    html.P("Blight is a general term for plant diseases caused by fungi or bacteria, leading to rapid tissue death."),
     html.H4("Gray Leaf Spot", style={"color": "#228B22"}),
-    html.P("Gray Leaf Spot is a fungal disease that causes grayish lesions on maize leaves, leading to reduced photosynthesis and yield loss."),  # Removed extra parenthesis
+    html.P("Gray Leaf Spot is a fungal disease that causes grayish lesions on maize leaves, leading to yield loss."),
     html.H4("Common Rust", style={"color": "#228B22"}),
-    html.P("Common Rust is a fungal infection characterized by reddish-brown pustules on maize leaves, which can reduce plant vigor and yield."),  # Removed extra parenthesis
+    html.P("Common Rust is a fungal infection characterized by reddish-brown pustules on maize leaves."),
     html.H4("Healthy", style={"color": "#228B22"}),
-    html.P("A healthy maize plant is free from disease, showing vibrant green leaves and strong growth.")  # Removed extra parenthesis
+    html.P("A healthy maize plant is free from disease, showing vibrant green leaves and strong growth."),
 ]
-
 
 # Sidebar layout
 sidebar = html.Div(
@@ -74,28 +74,26 @@ content = dbc.Col(
         dcc.Upload(
             id="upload-image",
             children=html.Div(
-["Drag and Drop or ", html.A("Select Files")],
-style = {"color": "#006400", "cursor": "pointer"},
-),
-style = {
-"width": "100%",
-"height": "100px",
-"lineHeight": "100px",
-"borderWidth": "1px",
-"borderStyle": "dashed",
-"borderColor": "#006400",
-"textAlign": "center",
-"marginBottom": "20px",
-},
-multiple = False,
-),
-html.Div(id="output-image-upload"),
-
-    # GPS Location Map
-html.H3("Drone GPS Tracker", style={"textAlign": "center", "marginTop": "30px"}),
-dcc.Graph(id='drone-gps-map'),
-],
-style = {"padding": "20px"},
+                ["Drag and Drop or ", html.A("Select Files")],
+                style={"color": "#006400", "cursor": "pointer"},
+            ),
+            style={
+                "width": "100%",
+                "height": "100px",
+                "lineHeight": "100px",
+                "borderWidth": "1px",
+                "borderStyle": "dashed",
+                "borderColor": "#006400",
+                "textAlign": "center",
+                "marginBottom": "20px",
+            },
+            multiple=False,
+        ),
+        html.Div(id="output-image-upload"),
+        html.H3("Drone GPS Tracker", style={"textAlign": "center", "marginTop": "30px"}),
+        dcc.Graph(id="drone-gps-map"),
+    ],
+    style={"padding": "20px"},
 )
 
 # App layout
@@ -104,48 +102,27 @@ app.layout = dbc.Container(
     fluid=True,
 )
 
-# Define classifier function
-
-
+# Classifier function
 def classifier(image):
     def recogMaize(image):
-        # Resize the image to match the input shape expected by the models
-        image_resized = cv2.resize(image, (224, 224))  # Models expect 224x224x3 input
-
-        # Normalize the image (scale pixel values to [0, 1])
+        image_resized = cv2.resize(image, (224, 224))
         image_normalized = image_resized / 255.0
-
-        # Add a batch dimension (shape: [1, 224, 224, 3])
         image_reshaped = np.expand_dims(image_normalized, axis=0)
-
-        # Get predictions from both models
         predictions1 = maize_model1.predict(image_reshaped, verbose=0)
         predictions2 = maize_model2.predict(image_reshaped, verbose=0)
-
-        # Combine predictions using weighted average
         combined_predictions = (0.5 * predictions1) + (0.5 * predictions2)
-
-        # Get the class index with the highest probability
         predicted_class = np.argmax(combined_predictions, axis=1)
-
-        # Get the class name using the label encoder
         class_name = encoder.inverse_transform(predicted_class)[0]
-
-        # Get the confidence of the predicted class
         confidence_level = combined_predictions[0][predicted_class[0]]
-
         return class_name, confidence_level
 
     return recogMaize(image)
 
-
-# Simulate GPS data (In real application, this data will come from drone's GPS)
+# Simulate GPS data
 def get_gps_coordinates():
-    # Randomly generate latitude and longitude for demo
     latitude = random.uniform(-90, 90)
     longitude = random.uniform(-180, 180)
     return latitude, longitude
-
 
 # Callback for sidebar toggle
 @app.callback(
@@ -158,7 +135,7 @@ def toggle_sidebar(n_clicks, is_open):
         return not is_open
     return is_open
 
-
+# Callback for image upload
 @app.callback(
     Output("output-image-upload", "children"),
     [Input("upload-image", "contents")],
@@ -167,20 +144,11 @@ def toggle_sidebar(n_clicks, is_open):
 def update_output(content, filename):
     if content is not None:
         try:
-            # Decode the uploaded image
             content_type, content_string = content.split(",")
             decoded = base64.b64decode(content_string)
-            
-            # Load the image using PIL
             image = Image.open(io.BytesIO(decoded))
-
-            # Convert image to array
             image_np = np.array(image)
-
-            # Get prediction and confidence
             prediction_name, confidence = classifier(image_np)
-
-            # Display the result
             return html.Div(
                 [
                     html.H5(f"Uploaded File: {filename}", style={"color": "#006400", "textAlign": "center"}),
@@ -196,33 +164,23 @@ def update_output(content, filename):
             )
         except Exception as e:
             return html.Div(f"Error processing image: {e}", style={"color": "red", "textAlign": "center"})
-
     return html.Div("No image uploaded yet.", style={"color": "#006400", "textAlign": "center"})
 
-
-# Callback to update GPS location on map
+# Callback to update GPS map
 @app.callback(
-    Output('drone-gps-map', 'figure'),
-    Input('upload-image', 'contents')  # This is just a trigger to update the map
+    Output("drone-gps-map", "figure"),
+    Input("upload-image", "contents"),
 )
 def update_gps_map(content):
     latitude, longitude = get_gps_coordinates()
-
-    # Create a DataFrame with the GPS coordinates
-    gps_data = pd.DataFrame({
-        'latitude': [latitude],
-        'longitude': [longitude],
-        'location': ['Drone Location']
-    })
-
-    # Plot the map using Plotly Express
+    gps_data = pd.DataFrame({"latitude": [latitude], "longitude": [longitude], "location": ["Drone Location"]})
     fig = px.scatter_geo(
         gps_data,
-        lat='latitude',
-        lon='longitude',
-        hover_name='location',
+        lat="latitude",
+        lon="longitude",
+        hover_name="location",
         projection="natural earth",
-        title="Drone GPS Location"
+        title="Drone GPS Location",
     )
     return fig
 
@@ -230,4 +188,3 @@ def update_gps_map(content):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8050))
     app.run_server(debug=True, host="0.0.0.0", port=port)
-    
