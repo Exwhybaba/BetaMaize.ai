@@ -11,6 +11,8 @@ from dash import Dash, html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc
 from tensorflow.keras.models import load_model
 import plotly.express as px
+import tempfile
+import shutil
 
 # Prevent TensorFlow from using the GPU
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -103,17 +105,27 @@ app.layout = dbc.Container(
 )
 
 # Classifier function
-def classifier(image):
-    image_resized = cv2.resize(image, (224, 224))
-    image_normalized = image_resized / 255.0
-    image_reshaped = np.expand_dims(image_normalized, axis=0)
-    predictions1 = maize_model1.predict(image_reshaped, verbose=0)
-    predictions2 = maize_model2.predict(image_reshaped, verbose=0)
-    combined_predictions = (0.5 * predictions1) + (0.5 * predictions2)
-    predicted_class = np.argmax(combined_predictions, axis=1)
-    class_name = encoder.inverse_transform(predicted_class)[0]
-    confidence_level = combined_predictions[0][predicted_class[0]]
-    return class_name, confidence_level
+def classifier(image_path):
+    def recogMaize(image_path):
+        image = cv2.imread(image_path)  # Read the image from the file path
+        image_resized = cv2.resize(image, (224, 224))
+        image_normalized = image_resized / 255.0
+        image_reshaped = np.expand_dims(image_normalized, axis=0)
+        predictions1 = maize_model1.predict(image_reshaped, verbose=0)
+        predictions2 = maize_model2.predict(image_reshaped, verbose=0)
+        combined_predictions = (0.5 * predictions1) + (0.5 * predictions2)
+        predicted_class = np.argmax(combined_predictions, axis=1)
+        class_name = encoder.inverse_transform(predicted_class)[0]
+        confidence_level = combined_predictions[0][predicted_class[0]]
+        return class_name, confidence_level
+
+    return recogMaize(image_path)
+
+# Simulate GPS data
+def get_gps_coordinates():
+    latitude = random.uniform(-90, 90)
+    longitude = random.uniform(-180, 180)
+    return latitude, longitude
 
 # Callback for sidebar toggle
 @app.callback(
@@ -134,29 +146,58 @@ def toggle_sidebar(n_clicks, is_open):
 )
 def update_output(content, filename):
     if content is not None:
-        content_type, content_string = content.split(",")
-        decoded = base64.b64decode(content_string)
-        temp_file = f"temp_{filename}"
-        with open(temp_file, "wb") as f:
-            f.write(decoded)
-        image = Image.open(temp_file)
-        image_np = np.array(image) 
-        prediction_name, confidence = classifier(image_np)
-        os.remove(temp_file)
-        return html.Div(
-            [
-                html.H5(f"Uploaded File: {filename}", style={"color": "#006400", "textAlign": "center"}),
-                html.Img(src=f"data:{content_type};base64,{content_string}", style={"maxWidth": "100%", "marginTop": "20px"}),
-                html.Div(
-                    [
-                        html.H3(f"Prediction: {prediction_name}", style={"color": "#228B22", "textAlign": "center"}),
-                        html.H4(f"Confidence: {confidence * 100:.2f}%", style={"color": "#006400", "textAlign": "center"}),
-                    ],
-                    style={"marginTop": "20px", "padding": "10px", "border": "2px solid #006400", "borderRadius": "8px"},
-                ),
-            ]
-        )
+        try:
+            content_type, content_string = content.split(",")
+            decoded = base64.b64decode(content_string)
+
+            # Create a temporary directory to save the uploaded image
+            temp_dir = tempfile.mkdtemp()
+            image_path = os.path.join(temp_dir, filename)
+
+            # Save the uploaded image to the temporary directory
+            with open(image_path, "wb") as f:
+                f.write(decoded)
+
+            # Now use the saved image path for prediction
+            prediction_name, confidence = classifier(image_path)
+
+            # Clean up temporary directory after processing
+            shutil.rmtree(temp_dir)
+
+            return html.Div(
+                [
+                    html.H5(f"Uploaded File: {filename}", style={"color": "#006400", "textAlign": "center"}),
+                    html.Img(src=f"data:{content_type};base64,{content_string}", style={"maxWidth": "100%", "marginTop": "20px"}),
+                    html.Div(
+                        [
+                            html.H3(f"Prediction: {prediction_name}", style={"color": "#228B22", "textAlign": "center"}),
+                            html.H4(f"Confidence: {confidence * 100:.2f}%", style={"color": "#006400", "textAlign": "center"}),
+                        ],
+                        style={"marginTop": "20px", "padding": "10px", "border": "2px solid #006400", "borderRadius": "8px"},
+                    ),
+                ]
+            )
+        except Exception as e:
+            return html.Div(f"Error processing image: {e}", style={"color": "red", "textAlign": "center"})
     return html.Div("No image uploaded yet.", style={"color": "#006400", "textAlign": "center"})
+
+# Callback to update GPS map
+@app.callback(
+    Output("drone-gps-map", "figure"),
+    Input("upload-image", "contents"),
+)
+def update_gps_map(content):
+    latitude, longitude = get_gps_coordinates()
+    gps_data = pd.DataFrame({"latitude": [latitude], "longitude": [longitude], "location": ["Drone Location"]})
+    fig = px.scatter_geo(
+        gps_data,
+        lat="latitude",
+        lon="longitude",
+        hover_name="location",
+        projection="natural earth",
+        title="Drone GPS Location",
+    )
+    return fig
 
 # Run the app
 if __name__ == "__main__":
