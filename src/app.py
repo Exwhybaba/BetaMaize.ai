@@ -159,7 +159,6 @@ def toggle_sidebar(n_clicks, is_open):
     return is_open
 
 
-# Callback to handle image upload and predictions
 @app.callback(
     Output("output-image-upload", "children"),
     [Input("upload-image", "contents")],
@@ -167,33 +166,37 @@ def toggle_sidebar(n_clicks, is_open):
 )
 def update_output(content, filename):
     if content is not None:
-        # Decode the uploaded image
-        _, content_string = content.split(",")
-        decoded = base64.b64decode(content_string)
-        image = Image.open(io.BytesIO(decoded))
+        try:
+            # Decode the uploaded image
+            content_type, content_string = content.split(",")
+            decoded = base64.b64decode(content_string)
+            
+            # Load the image using PIL
+            image = Image.open(io.BytesIO(decoded))
 
-        # Convert image to array
-        image_np = np.array(image)
+            # Convert image to array
+            image_np = np.array(image)
 
-        # Get prediction and confidence
-        prediction_name, confidence = classifier(image_np)
+            # Get prediction and confidence
+            prediction_name, confidence = classifier(image_np)
 
-        # Display the result
-        return html.Div(
-            [
-                html.H5(f"Uploaded File: {filename}", style={"color": "#006400", "textAlign": "center"}),
-                html.Img(src=content, style={"maxWidth": "100%", "marginTop": "20px"}),
-                html.Div(
-                    [
-                        html.H3(f"Prediction: {prediction_name}", style={"color": "#228B22", "textAlign": "center"}),
-                        html.H4(f"Confidence: {confidence * 100:.2f}%",
-                                style={"color": "#006400", "textAlign": "center"}),
-                    ],
-                    style={"marginTop": "20px", "padding": "10px", "border": "2px solid #006400",
-                           "borderRadius": "8px"},
-                ),
-            ]
-        )
+            # Display the result
+            return html.Div(
+                [
+                    html.H5(f"Uploaded File: {filename}", style={"color": "#006400", "textAlign": "center"}),
+                    html.Img(src=f"data:{content_type};base64,{content_string}", style={"maxWidth": "100%", "marginTop": "20px"}),
+                    html.Div(
+                        [
+                            html.H3(f"Prediction: {prediction_name}", style={"color": "#228B22", "textAlign": "center"}),
+                            html.H4(f"Confidence: {confidence * 100:.2f}%", style={"color": "#006400", "textAlign": "center"}),
+                        ],
+                        style={"marginTop": "20px", "padding": "10px", "border": "2px solid #006400", "borderRadius": "8px"},
+                    ),
+                ]
+            )
+        except Exception as e:
+            return html.Div(f"Error processing image: {e}", style={"color": "red", "textAlign": "center"})
+
     return html.Div("No image uploaded yet.", style={"color": "#006400", "textAlign": "center"})
 
 
