@@ -8,3 +8,4 @@ Pillow
 plotly
 tensorflow
 gunicorn
+scikit-learn
