@@ -140,7 +140,7 @@ def update_output(content, filename):
         with open(temp_file, "wb") as f:
             f.write(decoded)
         image = Image.open(temp_file)
-        image_np = np.array(image)
+        image_np = np.array(image) 
         prediction_name, confidence = classifier(image_np)
         os.remove(temp_file)
         return html.Div(
